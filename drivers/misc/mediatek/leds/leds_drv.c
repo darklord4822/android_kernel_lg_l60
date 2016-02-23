@@ -43,7 +43,7 @@
  * variables
  ***************************************************************************/
 struct cust_mt65xx_led *bl_setting = NULL;
-static unsigned int bl_brightness = 130;
+static unsigned int bl_brightness = 102;
 static unsigned int bl_duty = 21;
 static unsigned int bl_div = CLK_DIV1;
 static unsigned int bl_frequency = 32000;
@@ -92,11 +92,11 @@ static int mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level);
 
 #ifdef CONTROL_BL_TEMPERATURE
 
-/* define int limit for brightness limitation */
-static unsigned int limit = 255;
-static unsigned int limit_flag;
-static unsigned int last_level;
-static unsigned int current_level;
+//define int limit for brightness limitation
+static unsigned  int limit = 255;
+static unsigned  int limit_flag = 0;  
+static unsigned  int last_level = 0; 
+static unsigned  int current_level = 0; 
 static DEFINE_MUTEX(bl_level_limit_mutex);
 extern int disp_bls_set_max_backlight(unsigned int level);
 
@@ -147,8 +147,7 @@ int setMaxbrightness(int max_level, int enable)
 
 #else
 	LEDS_DRV_DEBUG("setMaxbrightness go through AAL\n");
-	disp_bls_set_max_backlight( ((((1 << LED_INTERNAL_LEVEL_BIT_CNT) - 1) * max_level +
-                     127) / 255) );
+	disp_bls_set_max_backlight(max_level);
 #endif				/* endif CONFIG_MTK_AAL_SUPPORT */
 	return 0;
 
@@ -416,16 +415,19 @@ static ssize_t show_frequency(struct device *dev, struct device_attribute *attr,
 {
 	bl_div = mt_get_bl_div();
 	bl_frequency = mt_get_bl_frequency();
+	
+	if(bl_setting->mode == MT65XX_LED_MODE_PWM)
+    {
+        mt_set_bl_frequency(32000/div_array[bl_div]);               
+    }
+    else if(bl_setting->mode == MT65XX_LED_MODE_CUST_LCM)
+    {
+        //mtkfb_get_backlight_pwm(bl_div, &bl_frequency);  
+        mt_backlight_get_pwm_fsel(bl_div, &bl_frequency);
+    }
 
-	if (bl_setting->mode == MT65XX_LED_MODE_PWM) {
-		mt_set_bl_frequency(32000 / div_array[bl_div]);
-	} else if (bl_setting->mode == MT65XX_LED_MODE_CUST_LCM) {
-		/* mtkfb_get_backlight_pwm(bl_div, &bl_frequency); */
-		mt_backlight_get_pwm_fsel(bl_div, &bl_frequency);
-	}
-
-	LEDS_DRV_DEBUG("[LED]get backlight PWM frequency value is:%d\n", bl_frequency);
-
+    LEDS_DRV_DEBUG("[LED]get backlight PWM frequency value is:%d \n", bl_frequency);
+    
 	return sprintf(buf, "%u\n", bl_frequency);
 }
 
