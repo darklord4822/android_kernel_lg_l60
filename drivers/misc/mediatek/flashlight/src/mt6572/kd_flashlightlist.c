@@ -787,4 +787,3 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Jackie Su <jackie.su@mediatek.com>");
 MODULE_DESCRIPTION("Flashlight control Driver");
 
-
