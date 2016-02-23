@@ -43,7 +43,9 @@ static DEFINE_MUTEX(leds_pmic_mutex);
  * variables
  ***************************************************************************/
 //struct cust_mt65xx_led* bl_setting_hal = NULL;
- static unsigned int bl_brightness_hal = 130;
+//<2014/03/19-Yuting Shih. Modified for default backlight level of LCM that matched 140 cd/m2.
+static unsigned int bl_brightness_hal = 130;
+//>2014/03/19-Yuting Shih.
 static unsigned int bl_duty_hal = 21;
 static unsigned int bl_div_hal = CLK_DIV1;
 static unsigned int bl_frequency_hal = 32000;
@@ -455,6 +457,13 @@ int mt_backlight_set_pwm(int pwm_num, u32 level, u32 div, struct PWM_config *con
 		
 	LEDS_DEBUG("[LED]backlight_set_pwm:duty is %d\n", level);
 	LEDS_DEBUG("[LED]backlight_set_pwm:clk_src/div/high/low is %d%d%d%d\n", pwm_setting.clk_src,pwm_setting.clk_div,pwm_setting.PWM_MODE_FIFO_REGS.HDURATION,pwm_setting.PWM_MODE_FIFO_REGS.LDURATION);
+
+//<2014/03/04-samhuang, MAX level for 5865
+#if defined(ARIMA_5865_HW)
+	level = 64;
+#endif
+//>2014/03/04-samhuang
+
 	if(level>0 && level <= 32)
 	{
 		pwm_setting.PWM_MODE_FIFO_REGS.GUARD_VALUE = 0;
@@ -469,6 +478,16 @@ int mt_backlight_set_pwm(int pwm_num, u32 level, u32 div, struct PWM_config *con
 		//pwm_setting.PWM_MODE_FIFO_REGS.SEND_DATA0 =  0xFFFFFFFF ;
 		//pwm_setting.PWM_MODE_FIFO_REGS.SEND_DATA1 = (1 << level) - 1;
 		pwm_set_spec_config(&pwm_setting);
+//<2014/02/25-Yuting Shih. Add for LCM backlight brightness control by PWM.
+	}else if(level>64 && level <=256)
+	{
+		pwm_setting.PWM_MODE_FIFO_REGS.GUARD_VALUE = 2;
+		for(; level > 32;)
+		  level -= 32;
+		pwm_setting.PWM_MODE_FIFO_REGS.SEND_DATA0 =  0xFFFFFFFF;
+		pwm_setting.PWM_MODE_FIFO_REGS.SEND_DATA1 = (1 << level) - 1;
+		pwm_set_spec_config(&pwm_setting);
+//>2014/02/25-Yuting Shih.
 	}else
 	{
 		LEDS_DEBUG("[LED]Error level in backlight\n");
@@ -1100,5 +1119,4 @@ int  mt_mt65xx_blink_set(struct led_classdev *led_cdev,
 	// delay_on and delay_off are not changed
 	return 0;
 }
-
 
