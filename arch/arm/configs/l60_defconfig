@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm 3.10.72 Kernel Configuration
+# Linux/arm 3.10.89 Kernel Configuration
 #
 CONFIG_ARM=y
 CONFIG_ARM_HAS_SG_CHAIN=y
@@ -1480,7 +1480,7 @@ CONFIG_MTK_PMIC_WRAP=y
 CONFIG_MTK_PMIC=y
 CONFIG_MTK_RTC=y
 CONFIG_MTK_GPIO=y
-CONFIG_MTK_MT6306_SUPPORT=y
+# CONFIG_MTK_MT6306_SUPPORT is not set
 CONFIG_MTK_SERIAL=y
 CONFIG_MTK_SERIAL_CONSOLE=y
 # CONFIG_MTK_SERIAL_MODEM_TEST is not set
