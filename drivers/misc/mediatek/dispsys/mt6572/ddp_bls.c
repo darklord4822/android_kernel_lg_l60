@@ -155,7 +155,10 @@ void disp_onConfig_bls(DISP_AAL_PARAM *param)
 
 static unsigned int brightness_mapping(unsigned int level)
 {
-    unsigned int mapped_level = level;
+    unsigned int mapped_level;
+
+    // PWM duty input =  PWM_DUTY_IN / 1024
+    mapped_level = level * 1023 / 255;
 
     if (mapped_level > gMaxLevel)
         mapped_level = gMaxLevel;
@@ -311,6 +314,8 @@ void disp_bls_init(unsigned int srcWidth, unsigned int srcHeight)
     DISP_REG_SET(DISP_REG_BLS_DITHER(17), 0x00000000);
 #endif
 
+    DISP_REG_SET(DISP_REG_BLS_EN, 0x00010001);          // enable BLS_EN
+
     disp_bls_config_full(srcWidth, srcHeight);
 
 #if 0
@@ -377,8 +382,12 @@ void disp_bls_config_full(unsigned int width, unsigned int height)
     DDP_DRV_DBG("disp_bls_config_full, width=%d, height=%d, reg=0x%x \n", 
         width, height, ((height<<16) + width));
 
-//    DISP_REG_SET(DISP_REG_BLS_PWM_DUTY          ,0x000003ff);
-
+    DISP_REG_SET(DISP_REG_BLS_DEBUG             ,0x00000003);
+//<2014/03/05-Yuting Shih. Modified from MTK patch.
+	//modify by mtk
+    //DISP_REG_SET(DISP_REG_BLS_PWM_DUTY          ,0x000003ff);
+	//moidfy end
+//>2014/03/05-Yuting Shih.
 #if defined(DDP_GAMMA_SUPPORT)
     DISP_REG_SET(DISP_REG_BLS_BLS_SETTING       ,0x00100007);  // remove gain setting here
 #else
@@ -512,6 +521,13 @@ int disp_bls_set_backlight(unsigned int level)
 
     mutex_lock(&backlight_mutex);
 
+//<2014/03/05-Yuting Shih. Add from MTK patch.
+//add by mtk
+    if(level && !clock_is_on(MT_CG_PWM_MM_SW_CG))
+        enable_clock(MT_CG_PWM_MM_SW_CG, "DDP");
+//add end
+//>2014/03/05-Yuting Shih.
+
     if (level && !clock_is_on(MT_CG_MDP_BLS_26M_SW_CG)) 
     {   
         // remove CG control to DDP path
@@ -533,10 +549,16 @@ int disp_bls_set_backlight(unsigned int level)
     mapped_level = brightness_mapping(level);
     DISP_MSG("after mapping, mapped_level: %d\n", mapped_level);
     DISP_REG_SET(DISP_REG_BLS_PWM_DUTY, mapped_level);
+//<2014/03/05-Yuting Shih. Add from MTK patch.
+	//add by mtk 
     if (mapped_level)	// enable PWM generator
         DISP_REG_SET(DISP_REG_BLS_EN, DISP_REG_GET(DISP_REG_BLS_EN) | 0x10000);
     else		// disable PWM generator
         DISP_REG_SET(DISP_REG_BLS_EN, DISP_REG_GET(DISP_REG_BLS_EN) & 0xFFFEFFFF);
+	//add end
+	DISP_MSG("add by mtk mapped_level: %d\n", mapped_level);
+	//add end
+//>2014/03/05-Yuting Shih.
     DISP_MSG("after SET, PWM_DUTY: %d\n", DISP_REG_GET(DISP_REG_BLS_PWM_DUTY));
 
 #ifdef USE_DISP_BLS_MUTEX 
@@ -544,6 +566,13 @@ int disp_bls_set_backlight(unsigned int level)
 #else
     DISP_REG_SET(DISP_REG_BLS_DEBUG, 0x0);
 #endif
+
+//<2014/03/05-Yuting Shih. Add from MTK patch.
+	//add by mtk
+    if(!level && clock_is_on(MT_CG_PWM_MM_SW_CG))
+        disable_clock(MT_CG_PWM_MM_SW_CG, "DDP");
+	//add end
+//>2014/03/05-Yuting Shih.
 
     if (!level && gBLSPowerOn) 
     {
@@ -592,5 +621,4 @@ int disp_bls_enable_irq(unsigned int value)
 
     return 0;
 }
-
 
